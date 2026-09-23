@@ -1,9 +1,11 @@
 package com.example.rtmtv
 
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -25,6 +27,7 @@ class PlayerActivity : AppCompatActivity() {
             ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
 
         findViewById<TextView>(R.id.playerTitle).text = name
+        val status = findViewById<TextView>(R.id.playerStatus)
 
         val httpFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(userAgent)
@@ -42,8 +45,21 @@ class PlayerActivity : AppCompatActivity() {
             .build()
             .apply {
                 setMediaItem(MediaItem.fromUri(url))
-                repeatMode = Player.REPEAT_MODE_OFF
                 playWhenReady = true
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        if (state == Player.STATE_BUFFERING) {
+                            status.visibility = View.VISIBLE
+                            status.text = "Buffering..."
+                        } else if (state == Player.STATE_READY) {
+                            status.visibility = View.GONE
+                        }
+                    }
+                    override fun onPlayerError(error: PlaybackException) {
+                        status.visibility = View.VISIBLE
+                        status.text = "Playback error: " + (error.cause?.message ?: error.message)
+                    }
+                })
                 prepare()
             }
 
